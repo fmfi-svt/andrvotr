@@ -1,0 +1,72 @@
+<assembly
+    xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+    <id>bin</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <directory>src/main/resources/</directory>
+            <outputDirectory></outputDirectory>
+        </fileSet>
+
+        <!-- The plugin property file -->
+        <fileSet>            
+            <directory>../plugin-impl/target/classes/FIXME</directory>
+            <outputDirectory>bootstrap</outputDirectory>
+            <includes>
+                <include>plugin.properties</include>
+            </includes>
+        </fileSet>
+        
+        <!--  The implementation jar -->
+        <fileSet>
+            <directory>../plugin-impl/target</directory>
+            <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
+            <includes>
+                <include>plugin-impl-*.jar</include>
+            </includes>
+            <excludes>
+                <exclude>*test*.jar</exclude>
+                <exclude>*javadoc.jar</exclude>
+                <exclude>*sources.jar</exclude>
+            </excludes>
+        </fileSet>
+        
+        <!--  The API jar -->
+        <fileSet>
+            <directory>../plugin-api/target</directory>
+            <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
+            <includes>
+                <include>plugin-api-*.jar</include>
+            </includes>
+            <excludes>
+                <exclude>*test*.jar</exclude>
+                <exclude>*javadoc.jar</exclude>
+                <exclude>*sources.jar</exclude>
+            </excludes>
+        </fileSet>
+        
+         <!--  The dependencies -->
+        <fileSet>
+            <directory>../plugin-impl/target/dependency</directory>
+            <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- The signing certificates -->
+        <fileSet>            
+            <directory>src/main/resources/bootstrap</directory>
+            <outputDirectory>bootstrap</outputDirectory>
+            <includes>
+                <include>keys.txt</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+</assembly>

@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <!-- Use your own parent if this is not a Shibboleth Project artifact. -->
+  <parent>
+    <groupId>net.shibboleth</groupId>
+    <artifactId>parent</artifactId>
+    <version>17.0.2</version>
+  </parent>
+  <groupId>io.github.fmfi_svt</groupId>
+  <artifactId>idp-plugin-andrvotr-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>Shibboleth IdP :: Plugins :: andrvotr</name>
+  <packaging>pom</packaging>
+  <description>andrvotr plugin for the Shibboleth IdP.</description>
+  <properties>
+    <idp.groupId>net.shibboleth.idp</idp.groupId>
+    <idp.version>5.0.0</idp.version>
+    <opensaml.groupId>org.opensaml</opensaml.groupId>
+    <opensaml.version>5.0.0</opensaml.version>
+    <shib-shared.groupId>net.shibboleth</shib-shared.groupId>
+    <shib-shared.version>9.0.0</shib-shared.version>
+    <shib-profile.groupId>net.shibboleth</shib-profile.groupId>
+    <shib-profile.version>5.0.0</shib-profile.version>
+    <shib-attribute.groupId>net.shibboleth</shib-attribute.groupId>
+    <shib-attribute.version>5.0.0</shib-attribute.version>
+    <shib-metadata.groupId>net.shibboleth</shib-metadata.groupId>
+    <shib-metadata.version>5.0.0</shib-metadata.version>
+    <checkstyle.configLocation>${project.basedir}/resources/checkstyle/checkstyle.xml</checkstyle.configLocation>
+  </properties>
+  <dependencies>
+    <!-- Project wide Dependencies -->
+    <dependency>
+      <groupId>${slf4j.groupId}</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <dependencyManagement>
+    <!-- andrvotr project dependencies -->
+    <dependencies>
+      <dependency>
+        <groupId>io.github.fmfi_svt</groupId>
+        <artifactId>idp-plugin-andrvotr-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.github.fmfi_svt</groupId>
+        <artifactId>idp-plugin-andrvotr-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <!-- Import Dependencies: Shib-Shared -->
+      <dependency>
+        <groupId>${shib-shared.groupId}</groupId>
+        <artifactId>shib-shared-bom</artifactId>
+        <version>${shib-shared.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Opensaml BOM for importing opensaml dependencies -->
+      <dependency>
+        <groupId>${opensaml.groupId}</groupId>
+        <artifactId>opensaml-bom</artifactId>
+        <version>${opensaml.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Import Dependencies: Shib-Metadata/Attribute/Profile -->
+      <dependency>
+        <groupId>${shib-profile.groupId}</groupId>
+        <artifactId>shib-profile-bom</artifactId>
+        <version>${shib-profile.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>${shib-attribute.groupId}</groupId>
+        <artifactId>shib-attribute-bom</artifactId>
+        <version>${shib-attribute.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>${shib-metadata.groupId}</groupId>
+        <artifactId>shib-metadata-bom</artifactId>
+        <version>${shib-metadata.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Shibboleth IdP BOM for importing IdP dependencies -->
+      <dependency>
+        <groupId>${idp.groupId}</groupId>
+        <artifactId>idp-bom</artifactId>
+        <version>${idp.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>net.shibboleth.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <links combine.children="append">
+            <link>${javadoc.url}/java-shib-shared/${shib-shared.version}</link>
+            <link>${javadoc.url}/java-opensaml/${opensaml.version}</link>
+            <link>${javadoc.url}/java-shib-metadata/${shib-metadata.version}</link>
+            <link>${javadoc.url}/java-shib-attribute/${shib-attribute.version}</link>
+            <link>${javadoc.url}/java-shib-profile/${shib-profile.version}</link>
+            <link>${javadoc.url}/java-identity-provider/${idp.version}</link>
+          </links>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <index>true</index>
+            <manifestEntries>
+              <Automatic-Module-Name>${automatic.module.name}</Automatic-Module-Name>
+              <Sealed>true</Sealed>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <modules>
+    <module>andrvotr-impl</module>
+    <module>andrvotr-api</module>
+<!-- All DIST modules must come after the -api and -impl modules -->
+    <module>andrvotr-dist</module>
+  </modules>
+</project>
