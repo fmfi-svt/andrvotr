@@ -36,7 +36,17 @@
             <scope>provided</scope>
         </dependency>
         <!-- Provided dependencies -->
-        
+        <dependency>
+            <groupId>${idp.groupId}</groupId>
+            <artifactId>idp-session-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Test dependencies -->
     </dependencies>
 

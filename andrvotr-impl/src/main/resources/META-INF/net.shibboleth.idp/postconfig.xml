@@ -9,36 +9,9 @@
 
     default-init-method="initialize" default-destroy-method="destroy">
 
-    <!-- 
-    System beans needed for extension to function, loaded after global.xml.
-    The default template shows an incomplete example authentication flow descriptor which can be
-    removed if not needed 
-    -->
-  
-    <bean id="authn/andrvotr" parent="shibboleth.AuthenticationFlow"
-            p:order="%{xxx.order:1000}"
-            p:nonBrowserSupported="%{xxx.nonBrowserSupported:true}"
-            p:passiveAuthenticationSupported="%{xxx.passiveAuthenticationSupported:true}"
-            p:forcedAuthenticationSupported="%{xxx.forcedAuthenticationSupported:true}"
-            p:proxyRestrictionsEnforced="%{xxx.proxyRestrictionsEnforced:%{idp.authn.enforceProxyRestrictions:true}}"
-            p:proxyScopingEnforced="%{xxx.proxyScopingEnforced:false}"
-            p:discoveryRequired="%{xxx.discoveryRequired:false}"
-            p:lifetime="%{xxx.lifetime:%{idp.authn.defaultLifetime:PT1H}}"
-            p:inactivityTimeout="%{xxx.inactivityTimeout:%{idp.authn.defaultTimeout:PT30M}}"
-            p:reuseCondition-ref="#{'%{xxx.reuseCondition:shibboleth.Conditions.TRUE}'.trim()}"
-            p:activationCondition-ref="#{'%{xxx.activationCondition:shibboleth.Conditions.TRUE}'.trim()}">
-        <property name="supportedPrincipals">
-            <list>
-                <bean parent="shibboleth.SAML2AuthnContextClassRef"
-                    c:classRef="class-ref" />
-                <bean parent="shibboleth.SAML1AuthenticationMethod"
-                    c:method="auth-ref" />
-            </list>
-        </property>
-        <property name="supportedPrincipalsByString">
-            <bean parent="shibboleth.CommaDelimStringArray"
-                c:_0="#{'%{xxx.supportedPrincipals:}'.trim()}" />
-        </property>
-    </bean>
-  
+    <bean id="andrvotr.AuthorityTokenGenerator" destroy-method=""
+        class="io.github.fmfi_svt.andrvotr.AuthorityTokenGenerator" />
+
+    <bean class="io.github.fmfi_svt.andrvotr.HttpController" />
+
 </beans>
