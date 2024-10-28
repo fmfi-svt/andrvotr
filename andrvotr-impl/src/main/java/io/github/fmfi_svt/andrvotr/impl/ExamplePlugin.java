@@ -20,8 +20,8 @@ public class ExamplePlugin extends PropertyDrivenIdPPlugin {
      * @throws IOException if properties can't be loaded
      * @throws PluginException if another error occurs
      */
-    public ExamplePlugin(@Nonnull final Class<? extends IdPPlugin> claz) throws IOException, PluginException {
-        super(claz);
+    public ExamplePlugin() throws IOException, PluginException {
+        super(ExamplePlugin.class);
     }
 
 }

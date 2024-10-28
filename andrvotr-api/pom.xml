@@ -41,7 +41,7 @@
                     <archive>
                         <manifestSections>
                             <manifestSection>
-                                <name>org/example/com/andrvotr/</name>
+                                <name>io/github/fmfi_svt/andrvotr/</name>
                                 <manifestEntries>
                                     <Implementation-Title>${project.artifactId}</Implementation-Title>
                                     <Implementation-Version>${project.version}</Implementation-Version>

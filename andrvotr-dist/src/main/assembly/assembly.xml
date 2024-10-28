@@ -15,7 +15,7 @@
 
         <!-- The plugin property file -->
         <fileSet>            
-            <directory>../plugin-impl/target/classes/FIXME</directory>
+            <directory>../andrvotr-impl/target/classes/io/github/fmfi_svt/andrvotr/impl</directory>
             <outputDirectory>bootstrap</outputDirectory>
             <includes>
                 <include>plugin.properties</include>
@@ -24,10 +24,10 @@
         
         <!--  The implementation jar -->
         <fileSet>
-            <directory>../plugin-impl/target</directory>
+            <directory>../andrvotr-impl/target</directory>
             <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
             <includes>
-                <include>plugin-impl-*.jar</include>
+                <include>idp-plugin-andrvotr-impl-*.jar</include>
             </includes>
             <excludes>
                 <exclude>*test*.jar</exclude>
@@ -38,10 +38,10 @@
         
         <!--  The API jar -->
         <fileSet>
-            <directory>../plugin-api/target</directory>
+            <directory>../andrvotr-api/target</directory>
             <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
             <includes>
-                <include>plugin-api-*.jar</include>
+                <include>idp-plugin-andrvotr-api-*.jar</include>
             </includes>
             <excludes>
                 <exclude>*test*.jar</exclude>
@@ -52,7 +52,7 @@
         
          <!--  The dependencies -->
         <fileSet>
-            <directory>../plugin-impl/target/dependency</directory>
+            <directory>../andrvotr-impl/target/dependency</directory>
             <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
             <includes>
                 <include>*.jar</include>
