@@ -9,9 +9,12 @@
 
     default-init-method="initialize" default-destroy-method="destroy">
 
-    <bean id="andrvotr.AuthorityTokenGenerator" destroy-method=""
-        class="io.github.fmfi_svt.andrvotr.AuthorityTokenGenerator" />
+    <bean id="andrvotr.AuthorityTokenGenerator"
+        class="io.github.fmfi_svt.andrvotr.AuthorityTokenGenerator"
+        p:dataSealer-ref="shibboleth.DataSealer"
+        p:tokenLifetime="%{andrvotr.authorityTokenLifetime:PT5M}" />
 
-    <bean class="io.github.fmfi_svt.andrvotr.HttpController" />
+    <bean class="io.github.fmfi_svt.andrvotr.HttpController"
+        p:dataSealer-ref="shibboleth.DataSealer" />
 
 </beans>
