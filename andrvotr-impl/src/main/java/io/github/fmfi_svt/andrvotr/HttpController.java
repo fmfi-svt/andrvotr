@@ -81,7 +81,7 @@ public final class HttpController extends AbstractInitializableComponent {
 
         // -1 because of https://errorprone.info/bugpattern/StringSplitter
         String[] parts = plainAuthorityToken.split("\n", -1);
-        if (parts.length != 3
+        if (parts.length != 4
                 || !Constants.AUTHORITY_TOKEN_INNER_PREFIX.equals(parts[0])
                 || !frontEntityID.equals(parts[1])) {
             sendError(httpResponse, 403, "Invalid authority token");

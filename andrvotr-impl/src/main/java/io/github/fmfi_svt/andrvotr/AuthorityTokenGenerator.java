@@ -1,6 +1,7 @@
 package io.github.fmfi_svt.andrvotr;
 
 import com.google.common.base.Strings;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -9,6 +10,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import net.shibboleth.idp.attribute.IdPAttributeValue;
 import net.shibboleth.idp.attribute.StringAttributeValue;
+import net.shibboleth.idp.profile.context.SpringRequestContext;
 import net.shibboleth.idp.session.IdPSession;
 import net.shibboleth.idp.session.context.SessionContext;
 import net.shibboleth.profile.context.RelyingPartyContext;
@@ -20,6 +22,8 @@ import net.shibboleth.shared.security.DataSealer;
 import net.shibboleth.shared.security.DataSealerException;
 import org.opensaml.profile.context.ProfileRequestContext;
 import org.slf4j.Logger;
+import org.springframework.webflow.context.ExternalContext;
+import org.springframework.webflow.execution.RequestContext;
 
 public final class AuthorityTokenGenerator extends AbstractInitializableComponent
         implements Function<ProfileRequestContext, List<IdPAttributeValue>> {
@@ -79,23 +83,69 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
         }
 
         SessionContext sessionContext = prc.getSubcontext(SessionContext.class);
-        IdPSession session = sessionContext != null ? sessionContext.getIdPSession() : null;
-        String sessionId = session != null ? session.getId() : null;
+        IdPSession idpSession = sessionContext != null ? sessionContext.getIdPSession() : null;
+        String idpSessionId = idpSession != null ? idpSession.getId() : null;
 
-        if (Strings.isNullOrEmpty(sessionId)) {
+        if (Strings.isNullOrEmpty(idpSessionId)) {
             // This can happen for example if you use the aacli.sh script.
             // It shouldn't happen for real users.
-            log.error("user session id is unknown. authority token not generated");
+            log.error("IdP session ID is unknown. authority token not generated");
             return List.of(new StringAttributeValue("E:unknown_session_id"));
         }
 
-        if (sessionId.contains("\n")) {
-            log.error("unexpected newline character in session id");
+        if (idpSessionId.contains("\n")) {
+            log.error("unexpected newline character in IdP session ID");
             return List.of(new StringAttributeValue("E:newline_in_session_id"));
         }
 
-        log.info("generating authority token for service={} user={}", rpId, session.getPrincipalName());
-        String plainToken = Constants.AUTHORITY_TOKEN_INNER_PREFIX + "\n" + rpId + "\n" + sessionId;
+        SpringRequestContext shibSpringRequestContext = prc.getSubcontext(SpringRequestContext.class);
+        if (shibSpringRequestContext == null) {
+            // There is no known situation where this happens.
+            // (Not sure if aacli.sh has this context, but it already fails earlier.)
+            log.error("SpringRequestContext is missing. authority token not generated");
+            return List.of(new StringAttributeValue("E:no_spring_request_context"));
+        }
+        RequestContext webflowRequestContext = shibSpringRequestContext.getRequestContext();
+        if (webflowRequestContext == null) {
+            // There is no known situation where this happens.
+            log.error("getRequestContext() is null. authority token not generated");
+            return List.of(new StringAttributeValue("E:no_webflow_request_context"));
+        }
+        ExternalContext externalContext = webflowRequestContext.getExternalContext();
+        if (externalContext == null) {
+            // There is no known situation where this happens.
+            log.error("getExternalContext() is null. authority token not generated");
+            return List.of(new StringAttributeValue("E:no_external_context"));
+        }
+        Object nativeRequest = externalContext.getNativeRequest();
+        if (nativeRequest == null) {
+            // There is no known situation where this happens.
+            log.error("getNativeRequest() is null. authority token not generated");
+            return List.of(new StringAttributeValue("E:no_native_request"));
+        }
+        String jsessionid;
+        if (nativeRequest instanceof HttpServletRequest httpRequest) {
+            jsessionid = httpRequest.getSession().getId();
+        } else {
+            // There is no known situation where this happens.
+            log.error("nativeRequest is not HttpServletRequest but {}. authority token not generated", nativeRequest);
+            return List.of(new StringAttributeValue("E:wrong_native_request_type"));
+        }
+        if (Strings.isNullOrEmpty(jsessionid)) {
+            // There is no known situation where this happens.
+            log.error("missing JSESSIONID. authority token not generated");
+            return List.of(new StringAttributeValue("E:missing_jsessionid"));
+        }
+        if (jsessionid.contains("\n")) {
+            log.error("unexpected newline character in JSESSIONID");
+            return List.of(new StringAttributeValue("E:newline_in_jsessionid"));
+        }
+        // TODO: Maybe also check for other characters which are forbidden in cookie values.
+
+        log.info("generating authority token for service={} user={}", rpId, idpSession.getPrincipalName());
+
+        String plainToken =
+                Constants.AUTHORITY_TOKEN_INNER_PREFIX + "\n" + rpId + "\n" + jsessionid + "\n" + idpSessionId;
         try {
             String wrappedToken = dataSealer.wrap(plainToken, Instant.now().plus(tokenLifetime));
             String completeToken = Constants.AUTHORITY_TOKEN_OUTER_PREFIX + wrappedToken;
