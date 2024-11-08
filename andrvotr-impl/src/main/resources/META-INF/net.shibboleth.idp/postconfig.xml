@@ -14,7 +14,16 @@
         p:dataSealer-ref="shibboleth.DataSealer"
         p:tokenLifetime="%{andrvotr.authorityTokenLifetime:PT5M}" />
 
+    <!-- idpSessionCookieName copied from java-identity-provider/idp-conf-impl/src/main/resources/net/shibboleth/idp/conf/session-manager-system.xml - keep it in sync. -->
     <bean class="io.github.fmfi_svt.andrvotr.HttpController"
+        p:idpSessionCookieName="%{idp.session.cookieName:__Host-shib_idp_session}"
+        p:httpClient-ref="%{andrvotr.httpclient.bean:andrvotr.DefaultHttpClient}"
         p:dataSealer-ref="shibboleth.DataSealer" />
 
+    <bean id="andrvotr.DefaultHttpClient" parent="shibboleth.HttpClientFactory"
+        p:disableCookieManagement="true"
+        p:disableRedirectHandling="true"
+        p:connectionDisregardTLSCertificate="%{andrvotr.httpclient.connectionDisregardTLSCertificate:false}"
+        p:maxConnectionsTotal="%{andrvotr.httpclient.maxConnectionsTotal:100}"
+        p:maxConnectionsPerRoute="%{andrvotr.httpclient.maxConnectionsPerRoute:100}" />
 </beans>

@@ -10,9 +10,13 @@ import javax.annotation.Nonnull;
 import net.shibboleth.shared.component.AbstractInitializableComponent;
 import net.shibboleth.shared.component.ComponentInitializationException;
 import net.shibboleth.shared.logic.Constraint;
+import net.shibboleth.shared.primitive.LoggerFactory;
 import net.shibboleth.shared.security.DataExpiredException;
 import net.shibboleth.shared.security.DataSealer;
 import net.shibboleth.shared.security.DataSealerException;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +25,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/andrvotr")
 public final class HttpController extends AbstractInitializableComponent {
 
+    private final @Nonnull Logger log = LoggerFactory.getLogger(HttpController.class);
+
+    private String idpSessionCookieName;
+
+    private HttpClient httpClient;
+
     private DataSealer dataSealer;
+
+    public void setIdpSessionCookieName(@Nonnull String name) {
+        checkSetterPreconditions();
+        Constraint.isFalse(Strings.isNullOrEmpty(name), "idpSessionCookieName cannot be null or empty");
+        idpSessionCookieName = name;
+    }
+
+    public void setHttpClient(@Nonnull HttpClient client) {
+        checkSetterPreconditions();
+        httpClient = Constraint.isNotNull(client, "HttpClient cannot be null");
+    }
 
     public void setDataSealer(@Nonnull DataSealer sealer) {
         checkSetterPreconditions();
@@ -32,6 +53,12 @@ public final class HttpController extends AbstractInitializableComponent {
     protected void doInitialize() throws ComponentInitializationException {
         super.doInitialize();
 
+        if (Strings.isNullOrEmpty(idpSessionCookieName)) {
+            throw new ComponentInitializationException("idpSessionCookieName cannot be null or empty");
+        }
+        if (null == httpClient) {
+            throw new ComponentInitializationException("HttpClient cannot be null");
+        }
         if (null == dataSealer) {
             throw new ComponentInitializationException("DataSealer cannot be null");
         }
@@ -88,7 +115,8 @@ public final class HttpController extends AbstractInitializableComponent {
             return;
         }
 
-        String sessionID = parts[2];
+        String jsessionidCookieValue = parts[2];
+        String idpSessionCookieValue = parts[3];
 
         String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO?";
         if (!targetUrl.startsWith(expectedPrefix)) {
@@ -96,7 +124,38 @@ public final class HttpController extends AbstractInitializableComponent {
             return;
         }
 
-        sendError(httpResponse, 200, "so far so good\nsessionID = " + sessionID + "\n"); // TODO
+        String jsessionidCookieName =
+                httpRequest.getServletContext().getSessionCookieConfig().getName();
+        // The fallback default value is needed according to https://stackoverflow.com/q/28080813. But that could be
+        // outdated, or container-dependent. In my testing with Jetty 12, getName() returned "JSESSIONID" even if
+        // web.xml does not set a name.
+        if (null == jsessionidCookieName) jsessionidCookieName = "JSESSIONID";
+
+        String cookies = (jsessionidCookieName + "=" + jsessionidCookieValue) + "; "
+                + (idpSessionCookieName + "=" + idpSessionCookieValue);
+
+        HttpGet nestedRequest = new HttpGet(targetUrl);
+        nestedRequest.addHeader("Cookie", cookies);
+
+        httpClient.execute(nestedRequest, (nestedResponse) -> {
+            log.info("XXXXX nestedResponse=[{}] [{}]", nestedResponse, nestedResponse.getHeaders()); // TODO: remove
+
+            if (nestedResponse.getCode() != 200) {
+                // TODO: Find a way to log more information on failure.
+                sendError(httpResponse, 400, "Nested request had status " + nestedResponse.getCode());
+                return null;
+            }
+
+            // TODO: Check if the response has expected content (a self-submitting form). If not, don't send it.
+
+            httpResponse.setStatus(nestedResponse.getCode());
+            httpResponse.setContentType(nestedResponse.getEntity().getContentType()); // TODO: handle null
+            httpResponse.setContentLengthLong(nestedResponse.getEntity().getContentLength()); // TODO: handle 0
+            OutputStream stream = httpResponse.getOutputStream();
+            nestedResponse.getEntity().writeTo(stream);
+            stream.close();
+            return null;
+        });
     }
 
     private void sendError(@Nonnull HttpServletResponse httpResponse, int status, String message) throws IOException {
