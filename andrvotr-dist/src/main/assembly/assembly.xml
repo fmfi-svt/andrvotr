@@ -36,20 +36,6 @@
             </excludes>
         </fileSet>
         
-        <!--  The API jar -->
-        <fileSet>
-            <directory>../andrvotr-api/target</directory>
-            <outputDirectory>webapp/WEB-INF/lib</outputDirectory>
-            <includes>
-                <include>idp-plugin-andrvotr-api-*.jar</include>
-            </includes>
-            <excludes>
-                <exclude>*test*.jar</exclude>
-                <exclude>*javadoc.jar</exclude>
-                <exclude>*sources.jar</exclude>
-            </excludes>
-        </fileSet>
-        
          <!--  The dependencies -->
         <fileSet>
             <directory>../andrvotr-impl/target/dependency</directory>

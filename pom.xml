@@ -50,11 +50,6 @@
     <dependencies>
       <dependency>
         <groupId>io.github.fmfi_svt</groupId>
-        <artifactId>idp-plugin-andrvotr-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.github.fmfi_svt</groupId>
         <artifactId>idp-plugin-andrvotr-impl</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -139,7 +134,6 @@
   </build>
   <modules>
     <module>andrvotr-impl</module>
-    <module>andrvotr-api</module>
 <!-- All DIST modules must come after the -api and -impl modules -->
     <module>andrvotr-dist</module>
   </modules>

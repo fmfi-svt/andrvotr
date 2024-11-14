@@ -19,11 +19,6 @@
     </properties>
     
     <dependencies>
-         <!-- Compile time intra-project dependencies -->
-        <dependency>
-            <groupId>io.github.fmfi_svt</groupId>
-            <artifactId>idp-plugin-andrvotr-api</artifactId>
-        </dependency>
         <!-- Service API and Plugin Description dependencies -->
         <dependency>
             <groupId>${idp.groupId}</groupId>
