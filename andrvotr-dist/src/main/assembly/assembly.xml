@@ -15,7 +15,7 @@
 
         <!-- The plugin property file -->
         <fileSet>            
-            <directory>../andrvotr-impl/target/classes/io/github/fmfi_svt/andrvotr/impl</directory>
+            <directory>../andrvotr-impl/target/classes/io/github/fmfi_svt/andrvotr</directory>
             <outputDirectory>bootstrap</outputDirectory>
             <includes>
                 <include>plugin.properties</include>
