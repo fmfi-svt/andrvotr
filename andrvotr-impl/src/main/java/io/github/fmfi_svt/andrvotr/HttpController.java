@@ -31,6 +31,8 @@ public final class HttpController extends AbstractInitializableComponent {
 
     private HttpClient httpClient;
 
+    private Config config;
+
     private DataSealer dataSealer;
 
     public void setIdpSessionCookieName(@Nonnull String name) {
@@ -42,6 +44,11 @@ public final class HttpController extends AbstractInitializableComponent {
     public void setHttpClient(@Nonnull HttpClient client) {
         checkSetterPreconditions();
         httpClient = Constraint.isNotNull(client, "HttpClient cannot be null");
+    }
+
+    public void setConfig(@Nonnull Config newConfig) {
+        checkSetterPreconditions();
+        config = Constraint.isNotNull(newConfig, "Config cannot be null");
     }
 
     public void setDataSealer(@Nonnull DataSealer sealer) {
@@ -59,6 +66,9 @@ public final class HttpController extends AbstractInitializableComponent {
         if (null == httpClient) {
             throw new ComponentInitializationException("HttpClient cannot be null");
         }
+        if (null == config) {
+            throw new ComponentInitializationException("Config cannot be null");
+        }
         if (null == dataSealer) {
             throw new ComponentInitializationException("DataSealer cannot be null");
         }
@@ -73,17 +83,22 @@ public final class HttpController extends AbstractInitializableComponent {
         }
 
         String frontEntityID = httpRequest.getParameter("front_entity_id");
+        String apiKey = httpRequest.getParameter("api_key");
         String authorityToken = httpRequest.getParameter("andrvotr_authority_token");
         String targetUrl = httpRequest.getParameter("target_url");
 
         if (Strings.isNullOrEmpty(frontEntityID)
+                || Strings.isNullOrEmpty(apiKey)
                 || Strings.isNullOrEmpty(authorityToken)
                 || Strings.isNullOrEmpty(targetUrl)) {
             sendError(httpResponse, 400, "Missing required parameter");
             return;
         }
 
-        // TODO: Check API key.
+        if (!config.isValidApiKey(frontEntityID, apiKey)) {
+            sendError(httpResponse, 403, "Invalid API key or front entity ID");
+            return;
+        }
 
         if (authorityToken.startsWith("E:")) {
             sendError(httpResponse, 403, "Authority token generator error: " + authorityToken);

@@ -30,9 +30,16 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
 
     private final @Nonnull Logger log = LoggerFactory.getLogger(AuthorityTokenGenerator.class);
 
+    private Config config;
+
     private DataSealer dataSealer;
 
     private Duration tokenLifetime;
+
+    public void setConfig(@Nonnull Config newConfig) {
+        checkSetterPreconditions();
+        config = Constraint.isNotNull(newConfig, "Config cannot be null");
+    }
 
     public void setDataSealer(@Nonnull DataSealer sealer) {
         checkSetterPreconditions();
@@ -50,6 +57,9 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
     protected void doInitialize() throws ComponentInitializationException {
         super.doInitialize();
 
+        if (null == config) {
+            throw new ComponentInitializationException("Config cannot be null");
+        }
         if (null == dataSealer) {
             throw new ComponentInitializationException("DataSealer cannot be null");
         }
@@ -75,7 +85,10 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
             return null;
         }
 
-        // TODO: If this SP has no configured backends or no API keys, return null without logging.
+        if (!config.isKnownFrontService(rpId)) {
+            // If this SP has no configured connections or no API keys, don't generate the attribute.
+            return null;
+        }
 
         if (rpId.contains("\n")) {
             log.error("unexpected newline character in entity id: {}", rpId);

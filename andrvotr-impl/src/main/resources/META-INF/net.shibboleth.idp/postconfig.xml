@@ -9,8 +9,14 @@
 
     default-init-method="initialize" default-destroy-method="destroy">
 
+    <bean id="andrvotr.Config"
+        class="io.github.fmfi_svt.andrvotr.Config"
+        p:apiKeys="%{andrvotr.apiKeys:}"
+        p:allowedConnections="%{andrvotr.allowedConnections:}" />
+
     <bean id="andrvotr.AuthorityTokenGenerator"
         class="io.github.fmfi_svt.andrvotr.AuthorityTokenGenerator"
+        p:config-ref="andrvotr.Config"
         p:dataSealer-ref="shibboleth.DataSealer"
         p:tokenLifetime="%{andrvotr.authorityTokenLifetime:PT5M}" />
 
@@ -18,6 +24,7 @@
     <bean class="io.github.fmfi_svt.andrvotr.HttpController"
         p:idpSessionCookieName="%{idp.session.cookieName:__Host-shib_idp_session}"
         p:httpClient-ref="%{andrvotr.httpclient.bean:andrvotr.DefaultHttpClient}"
+        p:config-ref="andrvotr.Config"
         p:dataSealer-ref="shibboleth.DataSealer" />
 
     <bean id="andrvotr.DefaultHttpClient" parent="shibboleth.HttpClientFactory"
