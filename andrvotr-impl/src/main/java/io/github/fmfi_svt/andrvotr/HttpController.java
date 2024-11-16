@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import javax.annotation.Nonnull;
 import net.shibboleth.shared.component.AbstractInitializableComponent;
 import net.shibboleth.shared.component.ComponentInitializationException;
@@ -133,11 +135,13 @@ public final class HttpController extends AbstractInitializableComponent {
         String jsessionidCookieValue = parts[2];
         String idpSessionCookieValue = parts[3];
 
-        String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO?";
-        if (!targetUrl.startsWith(expectedPrefix)) {
+        String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO";
+        String newPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/andrvotr-internal/redirect-sso";
+        if (!targetUrl.startsWith(expectedPrefix + "?")) {
             sendError(httpResponse, 403, "Invalid target URL");
             return;
         }
+        String modifiedUrl = newPrefix + targetUrl.substring(expectedPrefix.length());
 
         String jsessionidCookieName =
                 httpRequest.getServletContext().getSessionCookieConfig().getName();
@@ -149,8 +153,23 @@ public final class HttpController extends AbstractInitializableComponent {
         String cookies = (jsessionidCookieName + "=" + jsessionidCookieValue) + "; "
                 + (idpSessionCookieName + "=" + idpSessionCookieValue);
 
-        HttpGet nestedRequest = new HttpGet(targetUrl);
+        // Create an internal token which certifies to the nested request's receiver that we sent it.
+        String fabricationToken;
+        try {
+            // Expiration just for the sake of it. The exact length doesn't really matter.
+            Instant expiration = Instant.now().plus(Duration.ofMinutes(10));
+            fabricationToken = dataSealer.wrap("andrvotr-fabrication-token", expiration);
+        } catch (Exception e) {
+            log.error("DataSealer.wrap failed", e);
+            sendError(httpResponse, 500, "DataSealer.wrap failed");
+            return;
+        }
+
+        HttpGet nestedRequest = new HttpGet(modifiedUrl);
         nestedRequest.addHeader("Cookie", cookies);
+        nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Token", fabricationToken);
+        nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Front", frontEntityID);
+        nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Original", expectedPrefix);
 
         httpClient.execute(nestedRequest, (nestedResponse) -> {
             log.info("XXXXX nestedResponse=[{}] [{}]", nestedResponse, nestedResponse.getHeaders()); // TODO: remove
