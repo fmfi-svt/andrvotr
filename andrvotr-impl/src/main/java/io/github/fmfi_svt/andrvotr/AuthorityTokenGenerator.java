@@ -68,6 +68,7 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
         }
     }
 
+    @Override
     public @Nullable List<IdPAttributeValue> apply(@Nullable ProfileRequestContext prc) {
         if (prc == null) {
             // This should never happen.
