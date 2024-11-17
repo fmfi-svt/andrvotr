@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Shibboleth uses this WebApplicationContext hierarchy (according to TRACE logs):
+      - "Root WebApplicationContext"
+        - "WebApplicationContext for namespace 'idp-servlet'"
+          - "Flow ApplicationContext [<some/flow/id>]"
+
+    We want to override the "flowExecutor" bean, defined in
+    java-identity-provider/idp-conf-impl/src/main/resources/net/shibboleth/idp/conf/webflow-config.xml, which is loaded
+    in the idp-servlet context. In order to override it, our BeanFactoryPostProcessor must also exist in that context.
+    But "/META-INF/net.shibboleth.idp/postconfig.xml" is loaded in the root context, so it won't work. Fortunately
+    there is an undocumented mechanism: if a plugin contains "/META-INF/net/shibboleth/idp/mvc/postconfig.xml", it will
+    also be loaded in the idp-servlet context. This is configured in
+    java-identity-provider/idp-conf-impl/src/main/java/net/shibboleth/idp/conf/impl/ServletConfigServletContextInitializer.java.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util" xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:c="http://www.springframework.org/schema/c" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd"
+
+    default-init-method="initialize" default-destroy-method="destroy">
+
+    <!--
+        Spring will auto-detect and run this bean because it implements BeanFactoryPostProcessor. See also:
+        https://docs.spring.io/spring-framework/reference/core/beans/factory-extension.html#beans-factory-extension-factory-postprocessors
+        https://docs.spring.io/spring-framework/docs/6.1.x/javadoc-api/org/springframework/beans/factory/config/BeanFactoryPostProcessor.html
+    -->
+    <bean class="io.github.fmfi_svt.andrvotr.FabricationWebflowListenerInjector" />
+
+    <bean id="andrvotrFabricationWebflowListener"
+        class="io.github.fmfi_svt.andrvotr.FabricationWebflowListener"
+        p:config-ref="andrvotr.Config"
+        p:dataSealer-ref="shibboleth.DataSealer" />
+
+</beans>

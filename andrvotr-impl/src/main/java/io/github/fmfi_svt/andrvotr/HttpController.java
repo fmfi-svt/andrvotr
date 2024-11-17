@@ -8,6 +8,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import net.shibboleth.shared.component.AbstractInitializableComponent;
 import net.shibboleth.shared.component.ComponentInitializationException;
@@ -18,6 +21,7 @@ import net.shibboleth.shared.security.DataSealer;
 import net.shibboleth.shared.security.DataSealerException;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.core5.http.Header;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -135,13 +139,11 @@ public final class HttpController extends AbstractInitializableComponent {
         String jsessionidCookieValue = parts[2];
         String idpSessionCookieValue = parts[3];
 
-        String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO";
-        String newPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/andrvotr-internal/redirect-sso";
-        if (!targetUrl.startsWith(expectedPrefix + "?")) {
+        String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO?";
+        if (!targetUrl.startsWith(expectedPrefix)) {
             sendError(httpResponse, 403, "Invalid target URL");
             return;
         }
-        String modifiedUrl = newPrefix + targetUrl.substring(expectedPrefix.length());
 
         String jsessionidCookieName =
                 httpRequest.getServletContext().getSessionCookieConfig().getName();
@@ -165,22 +167,35 @@ public final class HttpController extends AbstractInitializableComponent {
             return;
         }
 
-        HttpGet nestedRequest = new HttpGet(modifiedUrl);
+        HttpGet nestedRequest = new HttpGet(targetUrl);
         nestedRequest.addHeader("Cookie", cookies);
         nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Token", fabricationToken);
         nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Front", frontEntityID);
-        nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Original", expectedPrefix);
 
         httpClient.execute(nestedRequest, (nestedResponse) -> {
-            log.info("XXXXX nestedResponse=[{}] [{}]", nestedResponse, nestedResponse.getHeaders()); // TODO: remove
+            List<String> trace = Arrays.stream(nestedResponse.getHeaders("Andrvotr-Internal-Fabrication-Trace"))
+                    .map(Header::getValue)
+                    .collect(Collectors.toList());
 
-            if (nestedResponse.getCode() != 200) {
-                // TODO: Find a way to log more information on failure.
-                sendError(httpResponse, 400, "Nested request had status " + nestedResponse.getCode());
+            // Only HTTP 200 (e.g. with the HTTP-POST binding) is supported for now. Adding support for 3xx with the
+            // HTTP-Redirect binding shouldn't be too difficult if needed, but that binding is very rarely used on SAML
+            // responses because they're so big.
+            //
+            // This condition relies on an internal implementation detail of saml-abstract-flow.xml: The state that
+            // sends finished SAML responses has id="HandleOutboundMessage".
+            boolean success = nestedResponse.getCode() == 200
+                    && !trace.isEmpty()
+                    && "@Start".equals(trace.get(0))
+                    && trace.contains("@AllowedConnectionCheckSuccess")
+                    && "HandleOutboundMessage".equals(trace.get(trace.size() - 1));
+
+            if (!success) {
+                String message = String.format(
+                        "Nested request failed: status=%s trace=[%s]",
+                        nestedResponse.getCode(), String.join(",", trace));
+                sendError(httpResponse, 400, message);
                 return null;
             }
-
-            // TODO: Check if the response has expected content (a self-submitting form). If not, don't send it.
 
             httpResponse.setStatus(nestedResponse.getCode());
             httpResponse.setContentType(nestedResponse.getEntity().getContentType()); // TODO: handle null
