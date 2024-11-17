@@ -1,1 +1,1 @@
-FIXME: Plugin keys
+${env.MAVEN_GPG_PUBLIC_KEY}

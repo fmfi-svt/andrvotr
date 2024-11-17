@@ -8,20 +8,15 @@
     </formats>
 
     <fileSets>
-        <fileSet>
-            <directory>src/main/resources/</directory>
-            <outputDirectory></outputDirectory>
-        </fileSet>
-
         <!-- The plugin property file -->
-        <fileSet>            
+        <fileSet>
             <directory>../andrvotr-impl/target/classes/io/github/fmfi_svt/andrvotr</directory>
             <outputDirectory>bootstrap</outputDirectory>
             <includes>
                 <include>plugin.properties</include>
             </includes>
         </fileSet>
-        
+
         <!--  The implementation jar -->
         <fileSet>
             <directory>../andrvotr-impl/target</directory>
@@ -35,7 +30,7 @@
                 <exclude>*sources.jar</exclude>
             </excludes>
         </fileSet>
-        
+
          <!--  The dependencies -->
         <fileSet>
             <directory>../andrvotr-impl/target/dependency</directory>
@@ -46,12 +41,13 @@
         </fileSet>
 
         <!-- The signing certificates -->
-        <fileSet>            
+        <fileSet>
             <directory>src/main/resources/bootstrap</directory>
             <outputDirectory>bootstrap</outputDirectory>
             <includes>
                 <include>keys.txt</include>
             </includes>
+            <filtered>true</filtered>
         </fileSet>
     </fileSets>
 
