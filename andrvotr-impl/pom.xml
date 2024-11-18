@@ -9,15 +9,15 @@
     </parent>
 
     <artifactId>idp-plugin-andrvotr-impl</artifactId>
-    <packaging>jar</packaging>    
+    <packaging>jar</packaging>
     <name>Shibboleth IdP :: Plugins :: andrvotr Impl</name>
     <description>IdP andrvotr plugin implementation.</description>
-    
+
     <properties>
         <checkstyle.configLocation>${project.basedir}/../resources/checkstyle/checkstyle.xml</checkstyle.configLocation>
         <automatic.module.name>io.github.fmfi_svt.andrvotr.impl</automatic.module.name>
     </properties>
-    
+
     <dependencies>
         <!-- Service API and Plugin Description dependencies -->
         <dependency>
@@ -39,6 +39,11 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
             <scope>provided</scope>
         </dependency>
 

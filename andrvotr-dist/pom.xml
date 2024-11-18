@@ -68,7 +68,7 @@
                                     <dataArtifactId>maven-dist-enforcer-data</dataArtifactId>
                                     <dataVersion>${maven-dist-enforcer-data.version}</dataVersion>
                                     <dataKeyRing>${basedir}/src/main/enforcer/shibbolethKeys.gpg</dataKeyRing>
-                                    <parentPomDir>${basedir}/..</parentPomDir>
+                                    <parentPomDir>${basedir}</parentPomDir>
                                     <tgzFiles>${project.build.directory}/${dist.plugin.finalName}.tar.gz</tgzFiles>
                                     <checkSignatures>true</checkSignatures>
                                     <checkDependencies>true</checkDependencies>
