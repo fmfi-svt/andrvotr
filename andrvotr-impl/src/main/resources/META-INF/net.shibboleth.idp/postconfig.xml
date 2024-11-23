@@ -14,15 +14,15 @@
         p:apiKeys="%{andrvotr.apiKeys:}"
         p:allowedConnections="%{andrvotr.allowedConnections:}" />
 
+    <!-- idpSessionCookieName copied from java-identity-provider/idp-conf-impl/src/main/resources/net/shibboleth/idp/conf/session-manager-system.xml - keep it in sync. -->
     <bean id="andrvotr.AuthorityTokenGenerator"
         class="io.github.fmfi_svt.andrvotr.AuthorityTokenGenerator"
         p:config-ref="andrvotr.Config"
         p:dataSealer-ref="shibboleth.DataSealer"
+        p:idpSessionCookieName="%{idp.session.cookieName:__Host-shib_idp_session}"
         p:tokenLifetime="%{andrvotr.authorityTokenLifetime:PT5M}" />
 
-    <!-- idpSessionCookieName copied from java-identity-provider/idp-conf-impl/src/main/resources/net/shibboleth/idp/conf/session-manager-system.xml - keep it in sync. -->
     <bean class="io.github.fmfi_svt.andrvotr.HttpController"
-        p:idpSessionCookieName="%{idp.session.cookieName:__Host-shib_idp_session}"
         p:httpClient-ref="%{andrvotr.httpclient.bean:andrvotr.DefaultHttpClient}"
         p:config-ref="andrvotr.Config"
         p:dataSealer-ref="shibboleth.DataSealer" />

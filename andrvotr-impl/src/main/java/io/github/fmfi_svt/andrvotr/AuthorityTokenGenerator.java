@@ -34,6 +34,8 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
 
     private DataSealer dataSealer;
 
+    private String idpSessionCookieName;
+
     private Duration tokenLifetime;
 
     public void setConfig(@Nonnull Config newConfig) {
@@ -44,6 +46,12 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
     public void setDataSealer(@Nonnull DataSealer sealer) {
         checkSetterPreconditions();
         dataSealer = Constraint.isNotNull(sealer, "DataSealer cannot be null");
+    }
+
+    public void setIdpSessionCookieName(@Nonnull String name) {
+        checkSetterPreconditions();
+        Constraint.isFalse(Strings.isNullOrEmpty(name), "idpSessionCookieName cannot be null or empty");
+        idpSessionCookieName = name;
     }
 
     public void setTokenLifetime(@Nonnull Duration lifetime) {
@@ -62,6 +70,9 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
         }
         if (null == dataSealer) {
             throw new ComponentInitializationException("DataSealer cannot be null");
+        }
+        if (Strings.isNullOrEmpty(idpSessionCookieName)) {
+            throw new ComponentInitializationException("idpSessionCookieName cannot be null or empty");
         }
         if (null == tokenLifetime) {
             throw new ComponentInitializationException("Lifetime cannot be null");
@@ -111,6 +122,8 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
             return List.of(new StringAttributeValue("E:newline_in_session_id"));
         }
 
+        log.info("generating authority token for service={} user={}", rpId, idpSession.getPrincipalName());
+
         SpringRequestContext shibSpringRequestContext = prc.getSubcontext(SpringRequestContext.class);
         if (shibSpringRequestContext == null) {
             // There is no known situation where this happens.
@@ -136,8 +149,15 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
             log.error("getNativeRequest() is null. authority token not generated");
             return List.of(new StringAttributeValue("E:no_native_request"));
         }
+        String jsessionidCookieName;
         String jsessionid;
         if (nativeRequest instanceof HttpServletRequest httpRequest) {
+            // If web.xml does not explicitly configure a cookie name, getName() returns "JSESSIONID" in Jetty (tested
+            // 9.4-12), but it returns null in Tomcat (tested 9-10). See https://stackoverflow.com/q/28080813.
+            jsessionidCookieName =
+                    httpRequest.getServletContext().getSessionCookieConfig().getName();
+            if (null == jsessionidCookieName) jsessionidCookieName = "JSESSIONID";
+
             jsessionid = httpRequest.getSession().getId();
         } else {
             // There is no known situation where this happens.
@@ -153,12 +173,10 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
             log.error("unexpected newline character in JSESSIONID");
             return List.of(new StringAttributeValue("E:newline_in_jsessionid"));
         }
-        // TODO: Maybe also check for other characters which are forbidden in cookie values.
 
-        log.info("generating authority token for service={} user={}", rpId, idpSession.getPrincipalName());
+        String cookies = (jsessionidCookieName + "=" + jsessionid) + "; " + (idpSessionCookieName + "=" + idpSessionId);
 
-        String plainToken =
-                Constants.AUTHORITY_TOKEN_INNER_PREFIX + "\n" + rpId + "\n" + jsessionid + "\n" + idpSessionId;
+        String plainToken = Constants.AUTHORITY_TOKEN_INNER_PREFIX + "\n" + rpId + "\n" + cookies;
         try {
             String wrappedToken = dataSealer.wrap(plainToken, Instant.now().plus(tokenLifetime));
             String completeToken = Constants.AUTHORITY_TOKEN_OUTER_PREFIX + wrappedToken;

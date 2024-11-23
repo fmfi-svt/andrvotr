@@ -33,19 +33,11 @@ public final class HttpController extends AbstractInitializableComponent {
 
     private final @Nonnull Logger log = LoggerFactory.getLogger(HttpController.class);
 
-    private String idpSessionCookieName;
-
     private HttpClient httpClient;
 
     private Config config;
 
     private DataSealer dataSealer;
-
-    public void setIdpSessionCookieName(@Nonnull String name) {
-        checkSetterPreconditions();
-        Constraint.isFalse(Strings.isNullOrEmpty(name), "idpSessionCookieName cannot be null or empty");
-        idpSessionCookieName = name;
-    }
 
     public void setHttpClient(@Nonnull HttpClient client) {
         checkSetterPreconditions();
@@ -66,9 +58,6 @@ public final class HttpController extends AbstractInitializableComponent {
     protected void doInitialize() throws ComponentInitializationException {
         super.doInitialize();
 
-        if (Strings.isNullOrEmpty(idpSessionCookieName)) {
-            throw new ComponentInitializationException("idpSessionCookieName cannot be null or empty");
-        }
         if (null == httpClient) {
             throw new ComponentInitializationException("HttpClient cannot be null");
         }
@@ -129,31 +118,20 @@ public final class HttpController extends AbstractInitializableComponent {
 
         // -1 because of https://errorprone.info/bugpattern/StringSplitter
         String[] parts = plainAuthorityToken.split("\n", -1);
-        if (parts.length != 4
+        if (parts.length != 3
                 || !Constants.AUTHORITY_TOKEN_INNER_PREFIX.equals(parts[0])
                 || !frontEntityID.equals(parts[1])) {
             sendError(httpResponse, 403, "Invalid authority token");
             return;
         }
 
-        String jsessionidCookieValue = parts[2];
-        String idpSessionCookieValue = parts[3];
+        String cookies = parts[2];
 
         String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO?";
         if (!targetUrl.startsWith(expectedPrefix)) {
             sendError(httpResponse, 403, "Invalid target URL");
             return;
         }
-
-        String jsessionidCookieName =
-                httpRequest.getServletContext().getSessionCookieConfig().getName();
-        // The fallback default value is needed according to https://stackoverflow.com/q/28080813. But that could be
-        // outdated, or container-dependent. In my testing with Jetty 12, getName() returned "JSESSIONID" even if
-        // web.xml does not set a name.
-        if (null == jsessionidCookieName) jsessionidCookieName = "JSESSIONID";
-
-        String cookies = (jsessionidCookieName + "=" + jsessionidCookieValue) + "; "
-                + (idpSessionCookieName + "=" + idpSessionCookieValue);
 
         // Create an internal token which certifies to the nested request's receiver that we sent it.
         String fabricationToken;
