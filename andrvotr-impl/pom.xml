@@ -25,11 +25,6 @@
             <artifactId>idp-admin-api</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>${shib-profile.groupId}</groupId>
-            <artifactId>shib-profile-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <!-- Provided dependencies -->
         <dependency>
             <groupId>${idp.groupId}</groupId>

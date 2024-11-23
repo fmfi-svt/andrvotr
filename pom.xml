@@ -38,14 +38,6 @@
         <idp.version>5.0.0</idp.version>
         <opensaml.groupId>org.opensaml</opensaml.groupId>
         <opensaml.version>5.0.0</opensaml.version>
-        <shib-shared.groupId>net.shibboleth</shib-shared.groupId>
-        <shib-shared.version>9.0.0</shib-shared.version>
-        <shib-profile.groupId>net.shibboleth</shib-profile.groupId>
-        <shib-profile.version>5.0.0</shib-profile.version>
-        <shib-attribute.groupId>net.shibboleth</shib-attribute.groupId>
-        <shib-attribute.version>5.0.0</shib-attribute.version>
-        <shib-metadata.groupId>net.shibboleth</shib-metadata.groupId>
-        <shib-metadata.version>5.0.0</shib-metadata.version>
         <checkstyle.configLocation>${project.basedir}/resources/checkstyle/checkstyle.xml</checkstyle.configLocation>
     </properties>
 
@@ -99,41 +91,11 @@
                 <artifactId>idp-plugin-andrvotr-impl</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- Import Dependencies: Shib-Shared -->
-            <dependency>
-                <groupId>${shib-shared.groupId}</groupId>
-                <artifactId>shib-shared-bom</artifactId>
-                <version>${shib-shared.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!-- Opensaml BOM for importing opensaml dependencies -->
             <dependency>
                 <groupId>${opensaml.groupId}</groupId>
                 <artifactId>opensaml-bom</artifactId>
                 <version>${opensaml.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <!-- Import Dependencies: Shib-Metadata/Attribute/Profile -->
-            <dependency>
-                <groupId>${shib-profile.groupId}</groupId>
-                <artifactId>shib-profile-bom</artifactId>
-                <version>${shib-profile.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>${shib-attribute.groupId}</groupId>
-                <artifactId>shib-attribute-bom</artifactId>
-                <version>${shib-attribute.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>${shib-metadata.groupId}</groupId>
-                <artifactId>shib-metadata-bom</artifactId>
-                <version>${shib-metadata.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
