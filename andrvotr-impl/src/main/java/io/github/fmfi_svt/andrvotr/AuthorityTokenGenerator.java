@@ -2,8 +2,10 @@ package io.github.fmfi_svt.andrvotr;
 
 import com.google.common.base.Strings;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -98,6 +100,7 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
 
         if (!config.isKnownFrontService(rpId)) {
             // If this SP has no configured connections or no API keys, don't generate the attribute.
+            log.debug("'{}' is not an andrvotr front service. authority token not generated", rpId);
             return null;
         }
 
@@ -143,27 +146,25 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
             log.error("getExternalContext() is null. authority token not generated");
             return List.of(new StringAttributeValue("E:no_external_context"));
         }
-        Object nativeRequest = externalContext.getNativeRequest();
-        if (nativeRequest == null) {
-            // There is no known situation where this happens.
-            log.error("getNativeRequest() is null. authority token not generated");
-            return List.of(new StringAttributeValue("E:no_native_request"));
-        }
+
         String jsessionidCookieName;
         String jsessionid;
-        if (nativeRequest instanceof HttpServletRequest httpRequest) {
+        try {
+            HttpServletRequest httpRequest = (HttpServletRequest) externalContext.getNativeRequest();
+            HttpServletResponse httpResponse = (HttpServletResponse) externalContext.getNativeResponse();
+
             // If web.xml does not explicitly configure a cookie name, getName() returns "JSESSIONID" in Jetty (tested
             // 9.4-12), but it returns null in Tomcat (tested 9-10). See https://stackoverflow.com/q/28080813.
             jsessionidCookieName =
                     httpRequest.getServletContext().getSessionCookieConfig().getName();
             if (null == jsessionidCookieName) jsessionidCookieName = "JSESSIONID";
 
-            jsessionid = httpRequest.getSession().getId();
-        } else {
-            // There is no known situation where this happens.
-            log.error("nativeRequest is not HttpServletRequest but {}. authority token not generated", nativeRequest);
-            return List.of(new StringAttributeValue("E:wrong_native_request_type"));
+            jsessionid = getRealJsessionid(jsessionidCookieName, httpRequest, httpResponse);
+        } catch (Exception e) {
+            log.error("getRealSessionid() failed. authority token not generated", e);
+            return List.of(new StringAttributeValue("E:error_getting_jsessionid"));
         }
+
         if (Strings.isNullOrEmpty(jsessionid)) {
             // There is no known situation where this happens.
             log.error("missing JSESSIONID. authority token not generated");
@@ -177,12 +178,84 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
         String cookies = (jsessionidCookieName + "=" + jsessionid) + "; " + (idpSessionCookieName + "=" + idpSessionId);
 
         String plainToken = Constants.AUTHORITY_TOKEN_INNER_PREFIX + "\n" + rpId + "\n" + cookies;
+        log.trace("plainToken = [{}]", plainToken.replace("\n", "[\\n]"));
+
         try {
             String wrappedToken = dataSealer.wrap(plainToken, Instant.now().plus(tokenLifetime));
             String completeToken = Constants.AUTHORITY_TOKEN_OUTER_PREFIX + wrappedToken;
+            log.trace("completeToken = [{}]", completeToken);
             return List.of(new StringAttributeValue(completeToken));
         } catch (DataSealerException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private String getRealJsessionid(String cookieName, HttpServletRequest request, HttpServletResponse response) {
+        // We need the real JSESSIONID value in order to later send it in the "Cookie" header of a nested request.
+        // request.getSession().getId() works as expected in Tomcat. But unfortunately not in Jetty. It does not
+        // return the full JSESSIONID ("node7xxxxxx.node7"), but a truncated version ("node7xxxxxx"). To work around
+        // this issue, we must read the request Cookie or response Set-Cookie header to look for the real value.
+
+        String shortJsessionid = request.getSession().getId();
+        boolean isNew = request.getSession().isNew();
+        log.trace(
+                "getRealJsessionid: cookieName = '{}', getSession().getId() = '{}', isNew() = {}",
+                cookieName,
+                shortJsessionid,
+                isNew);
+
+        if (shortJsessionid == null) {
+            // This should never happen.
+            throw new NullPointerException("getRealJsessionid: request.getSession().getId() is null");
+        }
+
+        String longJsessionid = null;
+        if (isNew) {
+            for (String setCookie : response.getHeaders("Set-Cookie")) {
+                if (setCookie.startsWith(cookieName + "=")) {
+                    longJsessionid = setCookie.split(";", -1)[0].split("=", 2)[1].trim();
+                    log.trace("getRealJsessionid: Set-Cookie: {}", setCookie);
+                }
+            }
+        } else if (request.isRequestedSessionIdValid()) {
+            for (String cookieHeader : Collections.list(request.getHeaders("Cookie"))) {
+                for (String cookie : cookieHeader.split(";", -1)) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(cookieName + "=")) {
+                        longJsessionid = cookie.split("=", 2)[1].trim();
+                        log.trace("getRealJsessionid: Cookie: {}", cookie);
+                    }
+                }
+            }
+        } else {
+            // This should not happen, because if the requested session ID is not valid, isNew should be true.
+            log.trace("isNew is false and request.isRequestedSessionIdValid() is false");
+        }
+
+        if (longJsessionid == null) {
+            // This could happen if the servlet container uses or accepts another session tracking mechanism instead of
+            // cookies, such as SSL sessions or URL rewriting). It might also happen if the Set-Cookie header is created
+            // in a weird way or at a weird time -- we expect it to be visible in response.getHeaders("Set-Cookie")
+            // immediately after the getSession() call. It should not happen with Jetty or Tomcat, at least in their
+            // default configuration. If it happens, fall back to getId() and hope for the best.
+            log.warn(
+                    "getRealJsessionid: could not find {} header named {}",
+                    (isNew ? "Set-Cookie" : "Cookie"),
+                    cookieName);
+            return shortJsessionid;
+        }
+
+        if (longJsessionid.equals(shortJsessionid)) {
+            log.trace("getRealJsessionid: found exact match");
+            return longJsessionid;
+        } else if (longJsessionid.contains(shortJsessionid)) {
+            log.trace("getRealJsessionid: found substring match");
+            return longJsessionid;
+        } else {
+            // This could happen if the getId() implementation returns something completely unrelated to the visible
+            // JSESSIONID. It might be allowed by the servlet spec, but it hasn't been seen in practice yet.
+            throw new RuntimeException(String.format(
+                    "getRealJsessionid: '%s' is not a substring of '%s'", shortJsessionid, longJsessionid));
         }
     }
 }
