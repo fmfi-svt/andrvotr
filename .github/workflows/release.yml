@@ -1,0 +1,39 @@
+name: Release
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+on:
+  push:
+    tags:
+      - '**[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_KEY }}
+      MAVEN_GPG_PUBLIC_KEY: ${{ secrets.MAVEN_GPG_PUBLIC_KEY }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+    - name: Build with Maven
+      run: mvn -B -Dgpg.signer=bc verify
+    - name: Attest
+      uses: actions/attest-build-provenance@v1
+      with:
+        subject-path: andrvotr-dist/target/*.tar.gz*
+    - name: Release
+      run: |
+        title="Andrvotr $GITHUB_REF_NAME (for IdP 5.x)"
+        gh release create "$GITHUB_REF_NAME" --title "$title" --verify-tag andrvotr-dist/target/*.tar.gz*
