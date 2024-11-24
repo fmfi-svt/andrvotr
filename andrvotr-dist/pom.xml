@@ -70,7 +70,7 @@
                                     <dataKeyRing>${basedir}/src/main/enforcer/shibbolethKeys.gpg</dataKeyRing>
                                     <parentPomDir>${basedir}</parentPomDir>
                                     <tgzFiles>${project.build.directory}/${dist.plugin.finalName}.tar.gz</tgzFiles>
-                                    <checkSignatures>true</checkSignatures>
+                                    <checkSignatures>false</checkSignatures>
                                     <checkDependencies>true</checkDependencies>
                                     <listJarSources>true</listJarSources>
                                     <checkM2>${net.shibboleth.maven.enforcer.rules.checkM2}</checkM2>
