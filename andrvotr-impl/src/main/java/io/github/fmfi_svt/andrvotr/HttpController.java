@@ -22,6 +22,7 @@ import net.shibboleth.shared.security.DataSealerException;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -81,6 +82,7 @@ public final class HttpController extends AbstractInitializableComponent {
         String apiKey = httpRequest.getParameter("api_key");
         String authorityToken = httpRequest.getParameter("andrvotr_authority_token");
         String targetUrl = httpRequest.getParameter("target_url");
+        log.trace("andrvotr/fabricate [{}] [{}] [{}] [{}]", frontEntityID, apiKey, authorityToken, targetUrl);
 
         if (Strings.isNullOrEmpty(frontEntityID)
                 || Strings.isNullOrEmpty(apiKey)
@@ -118,6 +120,7 @@ public final class HttpController extends AbstractInitializableComponent {
 
         // -1 because of https://errorprone.info/bugpattern/StringSplitter
         String[] parts = plainAuthorityToken.split("\n", -1);
+        log.trace("decrypted authority token parts: {}", List.of(parts));
         if (parts.length != 3
                 || !Constants.AUTHORITY_TOKEN_INNER_PREFIX.equals(parts[0])
                 || !frontEntityID.equals(parts[1])) {
@@ -151,17 +154,22 @@ public final class HttpController extends AbstractInitializableComponent {
         nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Front", frontEntityID);
 
         httpClient.execute(nestedRequest, (nestedResponse) -> {
+            int statusCode = nestedResponse.getCode();
+            String contentType = nestedResponse.getEntity().getContentType();
+            long contentLength = nestedResponse.getEntity().getContentLength();
+
             List<String> trace = Arrays.stream(nestedResponse.getHeaders("Andrvotr-Internal-Fabrication-Trace"))
                     .map(Header::getValue)
                     .collect(Collectors.toList());
 
-            // Only HTTP 200 (e.g. with the HTTP-POST binding) is supported for now. Adding support for 3xx with the
-            // HTTP-Redirect binding shouldn't be too difficult if needed, but that binding is very rarely used on SAML
-            // responses because they're so big.
+            // Only HTTP 200 (e.g. with the HTTP-POST binding) is supported for now. Adding support for 3xx responses,
+            // e.g. for HTTP-Artifact SAML responses, shouldn't be too difficult but hasn't been needed yet.
             //
             // This condition relies on an internal implementation detail of saml-abstract-flow.xml: The state that
             // sends finished SAML responses has id="HandleOutboundMessage".
-            boolean success = nestedResponse.getCode() == 200
+            boolean success = statusCode == 200
+                    && contentType != null
+                    && contentType.startsWith("text/html")
                     && !trace.isEmpty()
                     && "@Start".equals(trace.get(0))
                     && trace.contains("@AllowedConnectionCheckSuccess")
@@ -169,15 +177,27 @@ public final class HttpController extends AbstractInitializableComponent {
 
             if (!success) {
                 String message = String.format(
-                        "Nested request failed: status=%s trace=[%s]",
-                        nestedResponse.getCode(), String.join(",", trace));
+                        "Nested request failed: status=%s trace=[%s]", statusCode, String.join(",", trace));
                 sendError(httpResponse, 400, message);
+
+                // Try to log the nested response body if possible.
+                try {
+                    if ((contentType != null && contentType.startsWith("text/"))
+                            || nestedResponse.getEntity().getContentEncoding() != null) {
+                        String body = EntityUtils.toString(nestedResponse.getEntity(), 4096);
+                        log.warn("andrvotr/fabricate error body: [{}]", body.replace("\n", "[\\n]"));
+                    }
+                } catch (Exception e) {
+                }
+
                 return null;
             }
 
-            httpResponse.setStatus(nestedResponse.getCode());
-            httpResponse.setContentType(nestedResponse.getEntity().getContentType()); // TODO: handle null
-            httpResponse.setContentLengthLong(nestedResponse.getEntity().getContentLength()); // TODO: handle 0
+            log.trace("nested request success trace={}", trace);
+            log.info("andrvotr/fabricate success, sending SAML response to {}", frontEntityID);
+            httpResponse.setStatus(statusCode);
+            httpResponse.setContentType(contentType);
+            if (contentLength > 0) httpResponse.setContentLengthLong(contentLength);
             OutputStream stream = httpResponse.getOutputStream();
             nestedResponse.getEntity().writeTo(stream);
             stream.close();
@@ -186,6 +206,7 @@ public final class HttpController extends AbstractInitializableComponent {
     }
 
     private void sendError(@Nonnull HttpServletResponse httpResponse, int status, String message) throws IOException {
+        log.warn("andrvotr/fabricate failed with error {}: {}", status, message);
         httpResponse.setStatus(status);
         httpResponse.setContentType("text/plain; charset=UTF-8");
         httpResponse.setHeader("X-Content-Type-Options", "nosniff");
