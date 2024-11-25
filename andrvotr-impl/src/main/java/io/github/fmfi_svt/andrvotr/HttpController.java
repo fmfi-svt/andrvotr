@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,6 +41,8 @@ public final class HttpController extends AbstractInitializableComponent {
 
     private DataSealer dataSealer;
 
+    private String idpEntityID;
+
     public void setHttpClient(@Nonnull HttpClient client) {
         checkSetterPreconditions();
         httpClient = Constraint.isNotNull(client, "HttpClient cannot be null");
@@ -55,6 +58,12 @@ public final class HttpController extends AbstractInitializableComponent {
         dataSealer = Constraint.isNotNull(sealer, "DataSealer cannot be null");
     }
 
+    public void setIdpEntityID(@Nonnull String id) {
+        checkSetterPreconditions();
+        Constraint.isFalse(Strings.isNullOrEmpty(id), "idpEntityId cannot be null or empty");
+        idpEntityID = id;
+    }
+
     @Override
     protected void doInitialize() throws ComponentInitializationException {
         super.doInitialize();
@@ -67,6 +76,9 @@ public final class HttpController extends AbstractInitializableComponent {
         }
         if (null == dataSealer) {
             throw new ComponentInitializationException("DataSealer cannot be null");
+        }
+        if (Strings.isNullOrEmpty(idpEntityID)) {
+            throw new ComponentInitializationException("idpEntityId cannot be null or empty");
         }
     }
 
@@ -94,6 +106,16 @@ public final class HttpController extends AbstractInitializableComponent {
 
         if (!config.isValidApiKey(frontEntityID, apiKey)) {
             sendError(httpResponse, 403, "Invalid API key or front entity ID");
+            return;
+        }
+
+        // Check that the request Host header has the expected value. We will send it a nested request later, and this
+        // is a little extra protection against SSRF. Sadly, the IdP does not really know its own hostname. We will use
+        // the host portion of our entityID. This is a hacky approximation. In theory an IdP could use different
+        // hostnames in its entityID and its SAML endpoints.
+        String expectedHost = new URL(idpEntityID).getHost();
+        if (!expectedHost.equals(httpRequest.getServerName())) {
+            sendError(httpResponse, 400, "Unexpected Host, should be " + expectedHost);
             return;
         }
 
@@ -130,7 +152,7 @@ public final class HttpController extends AbstractInitializableComponent {
 
         String cookies = parts[2];
 
-        String expectedPrefix = "https://" + httpRequest.getServerName() + "/idp/profile/SAML2/Redirect/SSO?";
+        String expectedPrefix = "https://" + expectedHost + "/idp/profile/SAML2/Redirect/SSO?";
         if (!targetUrl.startsWith(expectedPrefix)) {
             sendError(httpResponse, 403, "Invalid target URL");
             return;

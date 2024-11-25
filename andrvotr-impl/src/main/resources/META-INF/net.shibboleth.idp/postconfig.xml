@@ -25,7 +25,8 @@
     <bean class="io.github.fmfi_svt.andrvotr.HttpController"
         p:httpClient-ref="%{andrvotr.httpclient.bean:andrvotr.DefaultHttpClient}"
         p:config-ref="andrvotr.Config"
-        p:dataSealer-ref="shibboleth.DataSealer" />
+        p:dataSealer-ref="shibboleth.DataSealer"
+        p:idpEntityID="%{idp.entityID}" />
 
     <bean id="andrvotr.DefaultHttpClient" parent="shibboleth.HttpClientFactory"
         p:disableCookieManagement="true"
