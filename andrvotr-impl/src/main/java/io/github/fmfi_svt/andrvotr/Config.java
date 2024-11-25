@@ -1,36 +1,37 @@
 package io.github.fmfi_svt.andrvotr;
 
 import com.google.common.base.Strings;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.shibboleth.shared.collection.CollectionSupport;
-import net.shibboleth.shared.collection.Pair;
-import net.shibboleth.shared.component.AbstractInitializableComponent;
-import net.shibboleth.shared.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.collection.Pair;
+import net.shibboleth.utilities.java.support.component.AbstractInitializableComponent;
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.component.ComponentSupport;
 
 public final class Config extends AbstractInitializableComponent {
 
     private @Nullable String apiKeysString;
 
-    private @Nonnull Set<Pair<String, String>> apiKeys = CollectionSupport.emptySet();
+    private @Nonnull Set<Pair<String, String>> apiKeys = Collections.emptySet();
 
-    private @Nonnull Set<String> apiKeyFronts = CollectionSupport.emptySet();
+    private @Nonnull Set<String> apiKeyFronts = Collections.emptySet();
 
     private @Nullable String allowedConnectionsString;
 
-    private @Nonnull Set<Pair<String, String>> allowedConnections = CollectionSupport.emptySet();
+    private @Nonnull Set<Pair<String, String>> allowedConnections = Collections.emptySet();
 
-    private @Nonnull Set<String> allowedConnectionFronts = CollectionSupport.emptySet();
+    private @Nonnull Set<String> allowedConnectionFronts = Collections.emptySet();
 
     public void setApiKeys(@Nullable String string) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         apiKeysString = string;
     }
 
     public void setAllowedConnections(@Nullable String string) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         allowedConnectionsString = string;
     }
 

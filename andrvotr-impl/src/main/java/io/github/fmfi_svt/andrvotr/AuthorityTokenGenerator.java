@@ -1,8 +1,6 @@
 package io.github.fmfi_svt.andrvotr;
 
 import com.google.common.base.Strings;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -10,20 +8,23 @@ import java.util.List;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import net.shibboleth.idp.attribute.IdPAttributeValue;
 import net.shibboleth.idp.attribute.StringAttributeValue;
+import net.shibboleth.idp.profile.context.RelyingPartyContext;
 import net.shibboleth.idp.profile.context.SpringRequestContext;
 import net.shibboleth.idp.session.IdPSession;
 import net.shibboleth.idp.session.context.SessionContext;
-import net.shibboleth.profile.context.RelyingPartyContext;
-import net.shibboleth.shared.component.AbstractInitializableComponent;
-import net.shibboleth.shared.component.ComponentInitializationException;
-import net.shibboleth.shared.logic.Constraint;
-import net.shibboleth.shared.primitive.LoggerFactory;
-import net.shibboleth.shared.security.DataSealer;
-import net.shibboleth.shared.security.DataSealerException;
+import net.shibboleth.utilities.java.support.component.AbstractInitializableComponent;
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.component.ComponentSupport;
+import net.shibboleth.utilities.java.support.logic.Constraint;
+import net.shibboleth.utilities.java.support.security.DataSealer;
+import net.shibboleth.utilities.java.support.security.DataSealerException;
 import org.opensaml.profile.context.ProfileRequestContext;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.webflow.context.ExternalContext;
 import org.springframework.webflow.execution.RequestContext;
 
@@ -41,23 +42,23 @@ public final class AuthorityTokenGenerator extends AbstractInitializableComponen
     private Duration tokenLifetime;
 
     public void setConfig(@Nonnull Config newConfig) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         config = Constraint.isNotNull(newConfig, "Config cannot be null");
     }
 
     public void setDataSealer(@Nonnull DataSealer sealer) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         dataSealer = Constraint.isNotNull(sealer, "DataSealer cannot be null");
     }
 
     public void setIdpSessionCookieName(@Nonnull String name) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         Constraint.isFalse(Strings.isNullOrEmpty(name), "idpSessionCookieName cannot be null or empty");
         idpSessionCookieName = name;
     }
 
     public void setTokenLifetime(@Nonnull Duration lifetime) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         Constraint.isNotNull(lifetime, "Lifetime cannot be null");
         Constraint.isFalse(lifetime.isNegative() || lifetime.isZero(), "Lifetime must be positive");
         tokenLifetime = lifetime;

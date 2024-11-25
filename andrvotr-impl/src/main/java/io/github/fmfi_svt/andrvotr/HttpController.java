@@ -1,8 +1,6 @@
 package io.github.fmfi_svt.andrvotr;
 
 import com.google.common.base.Strings;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
@@ -13,18 +11,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import net.shibboleth.shared.component.AbstractInitializableComponent;
-import net.shibboleth.shared.component.ComponentInitializationException;
-import net.shibboleth.shared.logic.Constraint;
-import net.shibboleth.shared.primitive.LoggerFactory;
-import net.shibboleth.shared.security.DataExpiredException;
-import net.shibboleth.shared.security.DataSealer;
-import net.shibboleth.shared.security.DataSealerException;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import net.shibboleth.utilities.java.support.component.AbstractInitializableComponent;
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.component.ComponentSupport;
+import net.shibboleth.utilities.java.support.logic.Constraint;
+import net.shibboleth.utilities.java.support.security.DataExpiredException;
+import net.shibboleth.utilities.java.support.security.DataSealer;
+import net.shibboleth.utilities.java.support.security.DataSealerException;
+import org.apache.http.Header;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,22 +45,22 @@ public final class HttpController extends AbstractInitializableComponent {
     private String idpEntityID;
 
     public void setHttpClient(@Nonnull HttpClient client) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         httpClient = Constraint.isNotNull(client, "HttpClient cannot be null");
     }
 
     public void setConfig(@Nonnull Config newConfig) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         config = Constraint.isNotNull(newConfig, "Config cannot be null");
     }
 
     public void setDataSealer(@Nonnull DataSealer sealer) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         dataSealer = Constraint.isNotNull(sealer, "DataSealer cannot be null");
     }
 
     public void setIdpEntityID(@Nonnull String id) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         Constraint.isFalse(Strings.isNullOrEmpty(id), "idpEntityId cannot be null or empty");
         idpEntityID = id;
     }
@@ -176,8 +177,9 @@ public final class HttpController extends AbstractInitializableComponent {
         nestedRequest.addHeader(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_FRONT, frontEntityID);
 
         httpClient.execute(nestedRequest, (nestedResponse) -> {
-            int statusCode = nestedResponse.getCode();
-            String contentType = nestedResponse.getEntity().getContentType();
+            int statusCode = nestedResponse.getStatusLine().getStatusCode();
+            Header contentTypeHeader = nestedResponse.getEntity().getContentType();
+            String contentType = contentTypeHeader == null ? null : contentTypeHeader.getValue();
             long contentLength = nestedResponse.getEntity().getContentLength();
 
             List<String> trace = Arrays.stream(
@@ -207,7 +209,7 @@ public final class HttpController extends AbstractInitializableComponent {
                 try {
                     if ((contentType != null && contentType.startsWith("text/"))
                             || nestedResponse.getEntity().getContentEncoding() != null) {
-                        String body = EntityUtils.toString(nestedResponse.getEntity(), 4096);
+                        String body = EntityUtils.toString(nestedResponse.getEntity());
                         log.warn("andrvotr/fabricate error body: [{}]", body.replace("\n", "[\\n]"));
                     }
                 } catch (Exception e) {

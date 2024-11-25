@@ -19,7 +19,7 @@
         class="io.github.fmfi_svt.andrvotr.AuthorityTokenGenerator"
         p:config-ref="andrvotr.Config"
         p:dataSealer-ref="shibboleth.DataSealer"
-        p:idpSessionCookieName="%{idp.session.cookieName:__Host-shib_idp_session}"
+        p:idpSessionCookieName="%{idp.session.cookieName:shib_idp_session}"
         p:tokenLifetime="%{andrvotr.authorityTokenLifetime:PT5M}" />
 
     <bean class="io.github.fmfi_svt.andrvotr.HttpController"

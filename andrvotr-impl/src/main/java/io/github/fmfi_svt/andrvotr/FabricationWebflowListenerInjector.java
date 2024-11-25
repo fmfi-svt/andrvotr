@@ -2,9 +2,9 @@ package io.github.fmfi_svt.andrvotr;
 
 import java.util.Map;
 import javax.annotation.Nonnull;
-import net.shibboleth.shared.component.AbstractInitializableComponent;
-import net.shibboleth.shared.primitive.LoggerFactory;
+import net.shibboleth.utilities.java.support.component.AbstractInitializableComponent;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;

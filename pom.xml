@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>11</maven.compiler.release>
 
         <maven-dist-enforcer.version>3.3.0</maven-dist-enforcer.version>
         <maven-dist-enforcer-data.version>1.0.16</maven-dist-enforcer-data.version>
@@ -35,9 +35,9 @@
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
 
         <idp.groupId>net.shibboleth.idp</idp.groupId>
-        <idp.version>5.0.0</idp.version>
+        <idp.version>4.2.0</idp.version>
         <opensaml.groupId>org.opensaml</opensaml.groupId>
-        <opensaml.version>5.0.0</opensaml.version>
+        <opensaml.version>4.2.0</opensaml.version>
         <checkstyle.configLocation>${project.basedir}/resources/checkstyle/checkstyle.xml</checkstyle.configLocation>
     </properties>
 

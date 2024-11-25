@@ -1,18 +1,19 @@
 package io.github.fmfi_svt.andrvotr;
 
 import com.google.common.base.Strings;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import javax.annotation.Nonnull;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import net.shibboleth.idp.profile.context.RelyingPartyContext;
 import net.shibboleth.idp.profile.context.navigate.WebflowRequestContextProfileRequestContextLookup;
-import net.shibboleth.profile.context.RelyingPartyContext;
-import net.shibboleth.shared.component.AbstractInitializableComponent;
-import net.shibboleth.shared.component.ComponentInitializationException;
-import net.shibboleth.shared.logic.Constraint;
-import net.shibboleth.shared.primitive.LoggerFactory;
-import net.shibboleth.shared.security.DataSealer;
+import net.shibboleth.utilities.java.support.component.AbstractInitializableComponent;
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
+import net.shibboleth.utilities.java.support.component.ComponentSupport;
+import net.shibboleth.utilities.java.support.logic.Constraint;
+import net.shibboleth.utilities.java.support.security.DataSealer;
 import org.opensaml.profile.context.ProfileRequestContext;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.webflow.definition.StateDefinition;
 import org.springframework.webflow.execution.Event;
 import org.springframework.webflow.execution.FlowExecutionListener;
@@ -46,12 +47,12 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
     private DataSealer dataSealer;
 
     public void setDataSealer(@Nonnull DataSealer sealer) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         dataSealer = Constraint.isNotNull(sealer, "DataSealer cannot be null");
     }
 
     public void setConfig(@Nonnull Config newConfig) {
-        checkSetterPreconditions();
+        ComponentSupport.ifInitializedThrowUnmodifiabledComponentException(this);
         config = Constraint.isNotNull(newConfig, "Config cannot be null");
     }
 
