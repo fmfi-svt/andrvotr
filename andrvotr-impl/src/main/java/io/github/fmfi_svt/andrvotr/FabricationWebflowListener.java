@@ -37,6 +37,8 @@ import org.springframework.webflow.execution.RequestContext;
 /// java-identity-provider/idp-conf-impl/src/main/resources/net/shibboleth/idp/flows/saml/saml-abstract-flow.xml.
 public final class FabricationWebflowListener extends AbstractInitializableComponent implements FlowExecutionListener {
 
+    private static final String ANDRVOTR_FABRICATION_TOKEN_OK = "andrvotr_fabrication_token_ok";
+
     private final @Nonnull Logger log = LoggerFactory.getLogger(FabricationWebflowListener.class);
 
     private Config config;
@@ -71,7 +73,7 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
                 (HttpServletRequest) context.getExternalContext().getNativeRequest();
 
         // If the request does not have the Andrvotr-Internal-Fabrication-Token header, do nothing.
-        String token = request.getHeader("Andrvotr-Internal-Fabrication-Token");
+        String token = request.getHeader(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_TOKEN);
         if (token == null) {
             log.debug("no Andrvotr-Internal-Fabrication-Token - ignoring request");
             return;
@@ -82,7 +84,7 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
         // info in Andrvotr-Internal-Fabrication-Trace. But just in case.)
         try {
             String content = dataSealer.unwrap(token);
-            if (!"andrvotr-fabrication-token".equals(content)) {
+            if (!Constants.ANDRVOTR_FABRICATION_TOKEN_VALUE.equals(content)) {
                 throw new Exception("wrong unwrapped value");
             }
         } catch (Exception e) {
@@ -93,8 +95,8 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
         }
 
         log.info("started {} as a nested request inside andrvotr/fabricate", request.getRequestURI());
-        context.getRequestScope().put("andrvotr_fabrication_token_ok", new Object());
-        addTrace(context, "@Start");
+        context.getRequestScope().put(ANDRVOTR_FABRICATION_TOKEN_OK, new Object());
+        addTrace(context, Constants.TRACE_START);
     }
 
     @Override
@@ -103,15 +105,16 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
                 (HttpServletRequest) context.getExternalContext().getNativeRequest();
 
         // If the request does not have the Andrvotr-Internal-Fabrication-Token header, do nothing.
-        if (!context.getRequestScope().contains("andrvotr_fabrication_token_ok")) return;
+        if (!context.getRequestScope().contains(ANDRVOTR_FABRICATION_TOKEN_OK)) return;
 
         // If we're leaving the "DecodeMessage" state with the "proceed" event (not an error), check whether our
         // configuration allows connections from the front entity ID (sent by HttpController in a header) to the back
         // entity ID (found in the decoded SAML message).
-        if ("DecodeMessage".equals(context.getCurrentState().getId()) && "proceed".equals(event.getId())) {
-            addTrace(context, "@AllowedConnectionCheck");
+        if (Constants.STATE_DECODE_MESSAGE.equals(context.getCurrentState().getId())
+                && Constants.EVENT_PROCEED.equals(event.getId())) {
+            addTrace(context, Constants.TRACE_ALLOWED_CONNECTION_CHECK);
 
-            String frontID = request.getHeader("Andrvotr-Internal-Fabrication-Front");
+            String frontID = request.getHeader(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_FRONT);
 
             // RelyingPartyContext is created by the "InitializeRelyingPartyContextFromSAMLPeer" action which runs
             // during the "DecodeMessage" state.
@@ -123,23 +126,23 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
                     || Strings.isNullOrEmpty(backID)
                     || !config.isAllowedConnection(frontID, backID)) {
                 log.error("forbidden andrvotr connection: front={} back={}", frontID, backID);
-                addTrace(context, "@AllowedConnectionCheckFail");
+                addTrace(context, Constants.TRACE_ALLOWED_CONNECTION_CHECK_FAILURE);
                 throw new RuntimeException("Andrvotr fabricate failed - this connection is not allowed");
             }
 
             log.info("allowed andrvotr connection: front={} back={}", frontID, backID);
-            addTrace(context, "@AllowedConnectionCheckSuccess");
+            addTrace(context, Constants.TRACE_ALLOWED_CONNECTION_CHECK_SUCCESS);
         }
     }
 
     @Override
     public void stateEntered(RequestContext context, StateDefinition previousState, StateDefinition state) {
         // If the request does not have the Andrvotr-Internal-Fabrication-Token header, do nothing.
-        if (!context.getRequestScope().contains("andrvotr_fabrication_token_ok")) return;
+        if (!context.getRequestScope().contains(ANDRVOTR_FABRICATION_TOKEN_OK)) return;
 
         // When moving from "HandleOutboundMessage" to "end", it is expected that the response is already sent, and we
         // can't add response headers anymore. Avoid the warning in addTrace.
-        if ("end".equals(state.getId())) return;
+        if (Constants.STATE_END.equals(state.getId())) return;
 
         // Save all entered states in a response header for troubleshooting.
         addTrace(context, state.getId());
@@ -151,7 +154,7 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
 
         if (!response.isCommitted()) {
             log.debug("adding Andrvotr-Internal-Fabrication-Trace: {}", value);
-            response.addHeader("Andrvotr-Internal-Fabrication-Trace", value);
+            response.addHeader(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_TRACE, value);
         } else {
             log.warn("response already committed, cannot add trace '{}'", value);
         }

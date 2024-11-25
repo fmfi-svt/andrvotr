@@ -163,7 +163,7 @@ public final class HttpController extends AbstractInitializableComponent {
         try {
             // Expiration just for the sake of it. The exact length doesn't really matter.
             Instant expiration = Instant.now().plus(Duration.ofMinutes(10));
-            fabricationToken = dataSealer.wrap("andrvotr-fabrication-token", expiration);
+            fabricationToken = dataSealer.wrap(Constants.ANDRVOTR_FABRICATION_TOKEN_VALUE, expiration);
         } catch (Exception e) {
             log.error("DataSealer.wrap failed", e);
             sendError(httpResponse, 500, "DataSealer.wrap failed");
@@ -172,15 +172,16 @@ public final class HttpController extends AbstractInitializableComponent {
 
         HttpGet nestedRequest = new HttpGet(targetUrl);
         nestedRequest.addHeader("Cookie", cookies);
-        nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Token", fabricationToken);
-        nestedRequest.addHeader("Andrvotr-Internal-Fabrication-Front", frontEntityID);
+        nestedRequest.addHeader(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_TOKEN, fabricationToken);
+        nestedRequest.addHeader(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_FRONT, frontEntityID);
 
         httpClient.execute(nestedRequest, (nestedResponse) -> {
             int statusCode = nestedResponse.getCode();
             String contentType = nestedResponse.getEntity().getContentType();
             long contentLength = nestedResponse.getEntity().getContentLength();
 
-            List<String> trace = Arrays.stream(nestedResponse.getHeaders("Andrvotr-Internal-Fabrication-Trace"))
+            List<String> trace = Arrays.stream(
+                            nestedResponse.getHeaders(Constants.HEADER_ANDRVOTR_INTERNAL_FABRICATION_TRACE))
                     .map(Header::getValue)
                     .collect(Collectors.toList());
 
@@ -193,9 +194,9 @@ public final class HttpController extends AbstractInitializableComponent {
                     && contentType != null
                     && contentType.startsWith("text/html")
                     && !trace.isEmpty()
-                    && "@Start".equals(trace.get(0))
-                    && trace.contains("@AllowedConnectionCheckSuccess")
-                    && "HandleOutboundMessage".equals(trace.get(trace.size() - 1));
+                    && Constants.TRACE_START.equals(trace.get(0))
+                    && trace.contains(Constants.TRACE_ALLOWED_CONNECTION_CHECK_SUCCESS)
+                    && Constants.STATE_HANDLE_OUTBOUND_MESSAGE.equals(trace.get(trace.size() - 1));
 
             if (!success) {
                 String message = String.format(
