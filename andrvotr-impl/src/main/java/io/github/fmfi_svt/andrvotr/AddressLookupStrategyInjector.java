@@ -1,6 +1,6 @@
 package io.github.fmfi_svt.andrvotr;
 
-import net.shibboleth.shared.component.AbstractInitializableComponent;
+import net.shibboleth.utilities.java.support.component.AbstractInitializableComponent;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;

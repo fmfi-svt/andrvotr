@@ -1,14 +1,14 @@
 package io.github.fmfi_svt.andrvotr;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletRequest;
 import net.shibboleth.idp.profile.context.SpringRequestContext;
-import net.shibboleth.shared.primitive.LoggerFactory;
-import net.shibboleth.shared.servlet.HttpServletSupport;
+import net.shibboleth.utilities.java.support.net.HttpServletSupport;
 import org.opensaml.profile.context.ProfileRequestContext;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.webflow.context.ExternalContext;
 import org.springframework.webflow.execution.RequestContext;
 
