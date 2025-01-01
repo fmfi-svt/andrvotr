@@ -15,6 +15,10 @@ public final class Constants {
     // Token value used for internal communication between HttpController and FabricationWebflowListener.
     public static final String ANDRVOTR_FABRICATION_TOKEN_VALUE = "andrvotr-fabrication-token";
 
+    // RequestContext request scope key used for internal communication between FabricationWebflowListener and
+    // AddressLookupStrategy.
+    public static final String ANDRVOTR_FABRICATION_TOKEN_OK = "andrvotr_fabrication_token_ok";
+
     // State and event names defined in the Shibboleth flow "SAML2/Redirect/SSO". Arguably an internal implementation
     // detail of Shibboleth. See class doc of FabricationWebflowListener.
     public static final String STATE_DECODE_MESSAGE = "DecodeMessage";

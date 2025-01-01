@@ -34,4 +34,8 @@
         p:connectionDisregardTLSCertificate="%{andrvotr.httpclient.connectionDisregardTLSCertificate:false}"
         p:maxConnectionsTotal="%{andrvotr.httpclient.maxConnectionsTotal:100}"
         p:maxConnectionsPerRoute="%{andrvotr.httpclient.maxConnectionsPerRoute:100}" />
+
+    <!-- Spring will auto-detect and run this bean because it implements BeanDefinitionRegistryPostProcessor. -->
+    <bean class="io.github.fmfi_svt.andrvotr.AddressLookupStrategyInjector" />
+
 </beans>

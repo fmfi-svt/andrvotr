@@ -37,8 +37,6 @@ import org.springframework.webflow.execution.RequestContext;
 /// java-identity-provider/idp-conf-impl/src/main/resources/net/shibboleth/idp/flows/saml/saml-abstract-flow.xml.
 public final class FabricationWebflowListener extends AbstractInitializableComponent implements FlowExecutionListener {
 
-    private static final String ANDRVOTR_FABRICATION_TOKEN_OK = "andrvotr_fabrication_token_ok";
-
     private final @Nonnull Logger log = LoggerFactory.getLogger(FabricationWebflowListener.class);
 
     private Config config;
@@ -95,7 +93,7 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
         }
 
         log.info("started {} as a nested request inside andrvotr/fabricate", request.getRequestURI());
-        context.getRequestScope().put(ANDRVOTR_FABRICATION_TOKEN_OK, new Object());
+        context.getRequestScope().put(Constants.ANDRVOTR_FABRICATION_TOKEN_OK, new Object());
         addTrace(context, Constants.TRACE_START);
     }
 
@@ -105,7 +103,7 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
                 (HttpServletRequest) context.getExternalContext().getNativeRequest();
 
         // If the request does not have the Andrvotr-Internal-Fabrication-Token header, do nothing.
-        if (!context.getRequestScope().contains(ANDRVOTR_FABRICATION_TOKEN_OK)) return;
+        if (!context.getRequestScope().contains(Constants.ANDRVOTR_FABRICATION_TOKEN_OK)) return;
 
         // If we're leaving the "DecodeMessage" state with the "proceed" event (not an error), check whether our
         // configuration allows connections from the front entity ID (sent by HttpController in a header) to the back
@@ -138,7 +136,7 @@ public final class FabricationWebflowListener extends AbstractInitializableCompo
     @Override
     public void stateEntered(RequestContext context, StateDefinition previousState, StateDefinition state) {
         // If the request does not have the Andrvotr-Internal-Fabrication-Token header, do nothing.
-        if (!context.getRequestScope().contains(ANDRVOTR_FABRICATION_TOKEN_OK)) return;
+        if (!context.getRequestScope().contains(Constants.ANDRVOTR_FABRICATION_TOKEN_OK)) return;
 
         // When moving from "HandleOutboundMessage" to "end", it is expected that the response is already sent, and we
         // can't add response headers anymore. Avoid the warning in addTrace.
