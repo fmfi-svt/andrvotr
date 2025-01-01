@@ -3,7 +3,7 @@
 
     <groupId>io.github.fmfi_svt</groupId>
     <artifactId>idp-plugin-andrvotr-parent</artifactId>
-    <version>41.0.1</version>
+    <version>41.0.2-SNAPSHOT</version>
     <name>Shibboleth IdP :: Plugins :: andrvotr</name>
     <packaging>pom</packaging>
     <description>andrvotr plugin for the Shibboleth IdP.</description>
