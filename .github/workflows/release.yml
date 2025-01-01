@@ -36,4 +36,4 @@ jobs:
     - name: Release
       run: |
         title="Andrvotr $GITHUB_REF_NAME (for IdP 4.x)"
-        gh release create "$GITHUB_REF_NAME" --title "$title" --verify-tag andrvotr-dist/target/*.tar.gz*
+        gh release create "$GITHUB_REF_NAME" --title "$title" --latest=false --verify-tag andrvotr-dist/target/*.tar.gz*
