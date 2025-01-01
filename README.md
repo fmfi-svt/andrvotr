@@ -161,6 +161,66 @@ The key benefit of this design is that it requires zero changes to the back serv
     sudo -u {USER} /opt/shibboleth-idp/bin/plugin.sh -i $PWD/andrvotr-dist/target/idp-plugin-andrvotr-*-SNAPSHOT.tar.gz --noCheck
     ```
 
-<!-- TODO: ## Developing compatible front services -->
+## Developing front services
+
+Front services which want to use Andrvotr to connect to a back service must follow this procedure.
+
+Andrvotr currently does not have a reusable client library in any language. You must implement it yourself.
+
+You will need:
+
+- a SAML Service Provider module or library
+- an HTTP client library with cookie management
+- an HTML parser library
+
+### Login procedure
+
+1.  Read the SAML attribute containing the Andrvotr Authority Token.
+    - It is identified by `Name="tag:fmfi-svt.github.io,2024:andrvotr-authority-token"` and
+      `NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"`.
+    - How to read attributes depends on your SP software. In most cases it should be trivial.
+    - If you use mod_shib (Shibboleth SP), it is not trivial because it discards any unknown attributes. Edit `/etc/shibboleth/attribute-map.xml` and add this:
+      ```xml
+      <Attribute name="tag:fmfi-svt.github.io,2024:andrvotr-authority-token" id="ANDRVOTR_AUTHORITY_TOKEN" />
+      ```
+    - If the IdP does not send you the attribute, the process cannot continue.
+      This is most likely because the IdP is not configured correctly (andrvotr.allowedConnections, andrvotr.apiKeys).
+
+2.  Initialize an empty cookie jar. It will be used for all HTTP requests you send.
+
+3.  Send an HTTP request to the back service URL which initiates the login process.
+    Disable automatic HTTP redirect processing in your client library.
+    (If the URL is not known, use e.g. browser dev tools to see what happens when you click the login button.)
+
+4.  Process the response to decide what request should be sent next:
+    - If it is a HTTP 3xx redirect, the *next request* will be a GET of that Location header.
+    - If it is a pseudo-redirect (an invisible form which is immediately submitted by JavaScript), parse the HTML page.
+      The *next request* will be a POST to that form's action with the form's hidden inputs.
+      Detecting this case might need some finetuning, but searching for the string "`document.forms[0].submit()`" works well in practice.
+    - If it is a success page (back service specific), return success.
+    - Otherwise, return failure.
+
+5.  If the *next request* is `GET https://$your_idp/...`, instead set *next request* to `POST https://$your_idp/idp/profile/andrvotr/fabricate` with POST body parameters:
+    - `front_entity_id` = the SAML SP entity ID of the front service
+    - `api_key` = your Andrvotr API key (must match andrvotr.apiKeys)
+    - `andrvotr_authority_token` = token from the SAML attribute
+    - `target_url` = the original *next request* URL
+
+6.  Send the *next request*.
+
+7.  Go to step 4 to process the response.
+
+### Example implementations
+
+[demo/demo.py](/demo/demo.py) implements an Andrvotr client in 50 lines of Python.
+It is not integrated with an SP -- you must extract the token and run demo.py manually from the command line.
+
+```shell
+./demo.py "$back_service_target_url" "$front_entity_id" "$api_key" "$andrvotr_authority_token"
+```
+
+The demo requires some Python libraries. Either [install "uv"](https://docs.astral.sh/uv/getting-started/installation/) which will take care of it. Or `apt install python3-bs4 python3-requests` and run with `python3 demo.py ...`. Or create a venv with `beautifulsoup4` and `requests`.
+
+[Votr](https://github.com/fmfi-svt/votr/blob/master/fladgejt/login.py) contains another implementation of this procedure (also in Python).
 
 <!-- TODO: ## Similar projects -->
